@@ -22,6 +22,7 @@ self.addEventListener('install', evt => {
       cache.addAll(assets);
     })
   );
+  self.skipWaiting();     
 });
 
 // activate event
@@ -36,18 +37,37 @@ self.addEventListener('activate', evt => {
       );
     })
   );
+  //self.clients.claim();
 });
 
 // fetch event
+// self.addEventListener('fetch', evt => {
+//   //console.log('fetch event', evt);
+//   evt.respondWith(
+//     caches.match(evt.request).then(cacheRes => {
+//       return cacheRes || fetch(evt.request).then(fetchRes => {
+//         return caches.open(dynamicCacheName).then(cache => {
+//           cache.put(evt.request.url, fetchRes.clone());
+//           return fetchRes;
+//         })
+//       });
+//     })
+//   );
+// });
+
 self.addEventListener('fetch', evt => {
-  //console.log('fetch event', evt);
+  if (!navigator.onLine) {
+    // If offline, try to fetch the resource from the cache
+    evt.respondWith(caches.match(evt.request));
+    return;
+  }
+
+  // If online, fetch the resource from the network and cache a clone
   evt.respondWith(
-    caches.match(evt.request).then(cacheRes => {
-      return cacheRes || fetch(evt.request).then(fetchRes => {
-        return caches.open(dynamicCacheName).then(cache => {
-          cache.put(evt.request.url, fetchRes.clone());
-          return fetchRes;
-        })
+    caches.open(dynamicCacheName).then(cache => {
+      return fetch(evt.request).then(fetchRes => {
+        cache.put(evt.request.url, fetchRes.clone());
+        return fetchRes;
       });
     })
   );
